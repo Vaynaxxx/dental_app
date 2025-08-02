@@ -1,34 +1,26 @@
 import 'package:flutter/material.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'models/employee_model.dart';
 import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
-import 'screens/admin/admin_dashboard_screen.dart';
+import 'screens/admin_dashboard_screen.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
-  // Инициализация Hive
-  await Hive.initFlutter();
-  Hive.registerAdapter(EmployeeAdapter());
-
+void main() {
   runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  Future<Widget> _getInitialScreen() async {
-    final prefs = await SharedPreferences.getInstance();
+  Future<Widget> getInitialScreen() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
     final isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
-    final isAdmin = prefs.getBool('isAdmin') ?? false;
+    final role = prefs.getString('role') ?? 'user';
 
-    if (isLoggedIn) {
-      return isAdmin ? AdminDashboardScreen() : HomeScreen();
+    if (isLoggedIn && (role == 'admin' || role == 'staff')) {
+      return AdminDashboardScreen();
     } else {
-      return LoginScreen();
+      return HomeScreen();
     }
   }
 
@@ -37,20 +29,13 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Dental App',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-      ),
+      theme: ThemeData(primarySwatch: Colors.teal),
       home: FutureBuilder<Widget>(
-        future: _getInitialScreen(),
+        future: getInitialScreen(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Scaffold(
               body: Center(child: CircularProgressIndicator()),
-            );
-          } else if (snapshot.hasError) {
-            return const Scaffold(
-              body: Center(child: Text('Ошибка при запуске')),
             );
           } else {
             return snapshot.data!;
